@@ -1,0 +1,27 @@
+{
+  "name": "raycastingp5",
+  "version": "1.0.0",
+  "description": "An app that does some art by using raycasting in P5 js.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build-p5": "xcopy \".\\node_modules\\p5\\lib\" \".\\vendors\\p5\" /s /e /y /i"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TheCakeIsNotALie/RaycastingP5.git"
+  },
+  "keywords": [
+    "p5",
+    "js",
+    "raycasting",
+    "ray",
+    "art"
+  ],
+  "author": "Yannis Perrin",
+  "license": "ISC",
+  "dependencies": {
+    "p5": "^0.10.2"
+  },
+  "devDependencies": {}
+}
