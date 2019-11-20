@@ -1,15 +1,19 @@
-let myp5 = new p5(( sketch ) => {
+var canvasWidth;
+var canvasHeight;
+window.onload = function (){
 
-    let x = 100;
-    let y = 100;
-  
-    sketch.setup = () => {
-      sketch.createCanvas(200, 200);
-    };
-  
-    sketch.draw = () => {
-      sketch.background(0);
-      sketch.fill(255);
-      sketch.rect(x,y,50,50);
-    };
-  }, document.getElementById('p5sketch'));
+  canvasWidth = document.getElementById("p5sketch").offsetWidth;
+  canvasHeight = document.getElementById("p5sketch").offsetHeight;
+
+  let myp5 = new p5(( sketch ) => {
+      sketch.setup = () => {
+        sketch.createCanvas(canvasWidth, canvasHeight, sketch.WEBGL);
+      };
+    
+      sketch.draw = () => {
+        sketch.background(255);
+        //sketch.translate(-this.canvasWidth/2,-this.canvasHeight/2,0);
+        sketch.box();
+      };
+    }, document.getElementById('p5sketch'));
+}
