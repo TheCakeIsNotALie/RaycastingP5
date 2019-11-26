@@ -65,8 +65,8 @@ class Vector2{
   }
 
   /**
-   * Divide the vector by a divisor.
-   * @param {Number} divisor Divisor to divide the vector with.
+   * Divide the vector by a number.
+   * @param {Number} divisor Number to divide the vector with.
    * @returns {Vector2} The quotient of the vector and the divisor.
    */
   divide(divisor){
@@ -140,10 +140,15 @@ class Ray{
     else{
       this.startPos = startPos;
       this.direction = direction;
-      this.slope = direction.y/direction.x;
       this.maxDistance = 2000;
+      this.nbBounce = 0;
+      this.maxBounce = 5;
       this.closestIntersectPoint = this.direction.normalized().multiply(this.maxDistance);
-      this.intersectingPoints = [];
+      this.points = [];
+      this.directions = [];
+
+      this.points.push(startPos);
+      this.directions.push(direction);
     }
   }
 
@@ -155,15 +160,30 @@ class Ray{
     sketch.line(this.startPos.x, -this.startPos.y, this.closestIntersectPoint.x, -this.closestIntersectPoint.y);
   }
 
-  /**
-   * Adds an intersecting point to the ray and replaces the closest point if the point is closer.
-   * @param {Vector2} vector The new intersecting point
-   */
-  addIntersectingPoint(vector){
-    if(this.startPos.distance(this.closestIntersectPoint) > this.startPos.distance(vector))
-      this.closestIntersectPoint = vector;
-    
-    this.intersectingPoints.push(vector);
+  cast(world){
+    var rayDidNotHit = false;
+    while(this.nbBounce < this.nbBounce && !rayDidNotHit){
+      var lastPoint = this.closestIntersectPoint;
+      var objectHit = null;
+
+      for(var i in world.objects){
+        var intersectingPoint = world.objects[i].rayIntersects(ray);
+        if(intersectingPoint !== null && this.startPos.distance(this.closestIntersectPoint) > this.startPos.distance(vector))
+        {
+          objectHit = world.objects[i];
+          this.closestIntersectPoint = vector;
+        } 
+      }
+
+      //if the last point did not change (ray did not hit any object)
+      if(lastPoint.equals(ray.closestIntersectPoint)){
+        rayDidNotHit = true;
+      }
+      else{
+        this.points.push(this.closestIntersectPoint);
+        this.points.push();
+      }
+    }
   }
 }
 
@@ -181,10 +201,10 @@ class Segment{
     else{
       this.startPos = startPos;
       this.endPos = endPos;
-      // //calculate the normal
-      // let diff = this.endPos.sub(this.startPos);
-      // this.normalRight = new Vector2(-diff.y, diff.x);
-      // this.normalLeft = new Vector2(diff.y, -diff.x);
+      //calculate the normal
+      let diff = this.endPos.sub(this.startPos);
+      this.normalLeft = new Vector2(-diff.y, diff.x).normalized();
+      this.normalRight = new Vector2(diff.y, -diff.x).normalized();
     }
   }
 
@@ -250,9 +270,17 @@ class Segment{
   draw(sketch){
     //Reverse to imitate a standard x,y coordinate system.
     sketch.line(this.startPos.x, -this.startPos.y, this.endPos.x, -this.endPos.y);
-    // sketch.stroke(0,255,0);
-    // sketch.line(this.normalStart.x, -this.normalStart.y, this.normalEnd.x, -this.normalEnd.y);
-    // sketch.stroke(0,0,0);
+    
+    var tmpV = this.startPos.add(this.endPos.sub(this.startPos).divide(2));
+    var length = 10;
+    var tmpV_Xnl = tmpV.add(this.normalLeft.multiply(length));
+    var tmpV_Xnr = tmpV.add(this.normalRight.multiply(length));
+    
+    sketch.stroke(0,0,255);
+    sketch.line(tmpV.x, -tmpV.y, tmpV_Xnl.x, -tmpV_Xnl.y);
+    sketch.stroke(0,255,0);
+    sketch.line(tmpV.x, -tmpV.y, tmpV_Xnr.x, -tmpV_Xnr.y);
+    sketch.stroke(0,0,0);
   }
 }
 
@@ -270,10 +298,23 @@ class World{
    * @param {Ray} ray The ray to cast.
    */
   castRay(ray){
-    for(var i in this.objects){
-      var intersectingPoint = this.objects[i].rayIntersects(ray);
-      if(intersectingPoint !== null){
-        ray.addIntersectingPoint(intersectingPoint);
+    var rayDidNotHit = false;
+    while(ray.nbBounce < ray.nbBounce && !rayDidNotHit){
+      var lastPoint = ray.closestIntersectPoint;
+      
+      for(var i in this.objects){
+        var intersectingPoint = this.objects[i].rayIntersects(ray);
+        if(intersectingPoint !== null){
+          ray.changeClosestIntersectPoint(intersectingPoint);
+        }
+      }
+
+      //if the last point did not change (ray did not hit any object)
+      if(lastPoint.equals(ray.closestIntersectPoint)){
+        rayDidNotHit = true;
+      }
+      else{
+        
       }
     }
   }
@@ -284,6 +325,11 @@ window.onload = function (){
   var canvasWidth = canvasContainer.offsetWidth;
   var canvasHeight = canvasContainer.offsetHeight;
 
+  var box_left = new Segment(new Vector2(-canvasWidth/2, -canvasHeight/2), new Vector2(-canvasWidth/2, canvasHeight/2));
+  var box_up = new Segment(new Vector2(-canvasWidth/2, canvasHeight/2), new Vector2(canvasWidth/2, canvasHeight/2));
+  var box_right = new Segment(new Vector2(canvasWidth/2, canvasHeight/2), new Vector2(canvasWidth/2, -canvasHeight/2));
+  var box_down = new Segment(new Vector2(canvasWidth/2, -canvasHeight/2), new Vector2(-canvasWidth/2, -canvasHeight/2));
+
   var l_c1 = new Segment(new Vector2(-500, 250), new Vector2(-500, -250));
   var l_c2 = new Segment(new Vector2(-500, -250), new Vector2(-300, -250));
   var l_c3 = new Segment(new Vector2(-300, -250), new Vector2(-300, -200));
@@ -293,7 +339,7 @@ window.onload = function (){
   var l_c7 = new Segment(new Vector2(-300, 200), new Vector2(-300, 250));
   var l_c8 = new Segment(new Vector2(-300, 250), new Vector2(-500, 250));
 
-  var objects = [l_c1,l_c2,l_c3,l_c4,l_c5,l_c6,l_c7,l_c8];
+  var objects = [box_left, box_up, box_right, box_down, l_c1,l_c2,l_c3,l_c4,l_c5,l_c6,l_c7,l_c8];
   var world = new World(objects);
   var mousePos = new Vector2();
   var debugRay = 0;
@@ -314,16 +360,16 @@ window.onload = function (){
 
       var rays = [];
 
-      // for(var i in world.objects){
-      //   world.objects[i].draw(sketch);
-      // }
-
-      for(var a = 0; a < 2*Math.PI ; a += Math.PI / 180){
-        var newRay = new Ray(mousePos, new Vector2(Math.cos(a), Math.sin(a)));
-        rays.push(newRay);
-        world.castRay(newRay);
-        newRay.draw(sketch);
+      for(var i in world.objects){
+        world.objects[i].draw(sketch);
       }
+
+      // for(var a = 0; a < 2*Math.PI ; a += Math.PI / 180){
+      //   var newRay = new Ray(mousePos, new Vector2(Math.cos(a), Math.sin(a)));
+      //   rays.push(newRay);
+      //   world.castRay(newRay);
+      //   newRay.draw(sketch);
+      // }
     };
 
     sketch.mouseMoved = () => {
