@@ -181,6 +181,10 @@ class Segment{
     else{
       this.startPos = startPos;
       this.endPos = endPos;
+      // //calculate the normal
+      // let diff = this.endPos.sub(this.startPos);
+      // this.normalRight = new Vector2(-diff.y, diff.x);
+      // this.normalLeft = new Vector2(diff.y, -diff.x);
     }
   }
 
@@ -195,7 +199,7 @@ class Segment{
     var r = this.endPos.sub(this.startPos);
 
     var q = ray.startPos;
-    var s = ray.direction.normalized().multiply(ray.maxDistance);
+    var s = ray.direction.normalized().multiply(ray.maxDistance).sub(ray.startPos);
 
     //store some calculations to avoid repeating operations
     var rXs = r.crossProduct(s);
@@ -205,7 +209,7 @@ class Segment{
     //edge cases
     //if the lines are collinear
     if(rXs == qMp_Xr){
-      var t0 = qMp.crossProduct(r);
+      var t0 = qMp_Xr;
       var t1 = t0 + s.crossProduct(r) / r.crossProduct(r);
 
       if((t0 >= 0 && t0 <= 1) || (t1 >= 0 && t1 <= 1)){
@@ -246,6 +250,9 @@ class Segment{
   draw(sketch){
     //Reverse to imitate a standard x,y coordinate system.
     sketch.line(this.startPos.x, -this.startPos.y, this.endPos.x, -this.endPos.y);
+    // sketch.stroke(0,255,0);
+    // sketch.line(this.normalStart.x, -this.normalStart.y, this.normalEnd.x, -this.normalEnd.y);
+    // sketch.stroke(0,0,0);
   }
 }
 
@@ -276,12 +283,20 @@ window.onload = function (){
   var canvasContainer = document.getElementById("p5sketch");
   var canvasWidth = canvasContainer.offsetWidth;
   var canvasHeight = canvasContainer.offsetHeight;
-  var seg1 = new Segment(new Vector2(100,50), new Vector2(200,50));
-  var seg2 = new Segment(new Vector2(200,50), new Vector2(200, 150));
-  var seg3 = new Segment(new Vector2(200,150), new Vector2(100, 150));
-  var seg4 = new Segment(new Vector2(100,150), new Vector2(100, 50));
-  var world = new World([seg1, seg2, seg3, seg4]);
+
+  var l_c1 = new Segment(new Vector2(-500, 250), new Vector2(-500, -250));
+  var l_c2 = new Segment(new Vector2(-500, -250), new Vector2(-300, -250));
+  var l_c3 = new Segment(new Vector2(-300, -250), new Vector2(-300, -200));
+  var l_c4 = new Segment(new Vector2(-300, -200), new Vector2(-450, -200));
+  var l_c5 = new Segment(new Vector2(-450, -200), new Vector2(-450, 200));
+  var l_c6 = new Segment(new Vector2(-450, 200), new Vector2(-300, 200));
+  var l_c7 = new Segment(new Vector2(-300, 200), new Vector2(-300, 250));
+  var l_c8 = new Segment(new Vector2(-300, 250), new Vector2(-500, 250));
+
+  var objects = [l_c1,l_c2,l_c3,l_c4,l_c5,l_c6,l_c7,l_c8];
+  var world = new World(objects);
   var mousePos = new Vector2();
+  var debugRay = 0;
 
   let myp5 = new p5(( sketch ) => {
     sketch.setup = () => {
@@ -290,16 +305,20 @@ window.onload = function (){
     };
   
     sketch.draw = () => {
-      sketch.background(0);
+      sketch.background(255);
       sketch.smooth();
       sketch.stroke(100,100,100);
       sketch.line(-canvasWidth / 2, 0, canvasWidth / 2, 0);
       sketch.line(0, -canvasHeight / 2, 0, canvasHeight / 2);
-      sketch.stroke(255,255,255);
+      sketch.stroke(0,0,0);
 
       var rays = [];
-      //create rays from mouse pos
-      for(var a = 0; a < 2*Math.PI  ; a += Math.PI / 90){
+
+      // for(var i in world.objects){
+      //   world.objects[i].draw(sketch);
+      // }
+
+      for(var a = 0; a < 2*Math.PI ; a += Math.PI / 180){
         var newRay = new Ray(mousePos, new Vector2(Math.cos(a), Math.sin(a)));
         rays.push(newRay);
         world.castRay(newRay);
